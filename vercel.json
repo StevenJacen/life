@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend && NEXT_PUBLIC_API_BASE='' npm install --registry https://registry.npmjs.org/ && npm run build",
+  "outputDirectory": "frontend/.next",
+  "framework": null,
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index.js" }
+  ],
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 10,
+      "includeFiles": "backend/db/**"
+    }
+  }
+}

@@ -2,7 +2,8 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
-const dbPath = path.join(__dirname, '..', 'life.db');
+const isVercel = process.env.VERCEL === '1';
+const dbPath = isVercel ? '/tmp/life.db' : path.join(__dirname, '..', 'life.db');
 const schemaPath = path.join(__dirname, 'schema.sql');
 
 const db = new Database(dbPath);
@@ -13,7 +14,7 @@ try {
   db.exec(schema);
 } catch (err) {
   console.error('Failed to init schema:', err);
-  process.exit(1);
+  if (!isVercel) process.exit(1);
 }
 
 function insertEvent(ev, isAiGenerated = false) {
@@ -53,3 +54,13 @@ function insertEvent(ev, isAiGenerated = false) {
 
 module.exports = db;
 module.exports.insertEvent = insertEvent;
+
+// 在 Serverless 环境（如 Vercel）中自动 seed，如果数据库为空
+try {
+  const hasData = db.prepare("SELECT COUNT(*) as count FROM event_def").get();
+  if (!hasData || hasData.count === 0) {
+    require('./seed');
+  }
+} catch (err) {
+  console.error('Seed check failed:', err);
+}
