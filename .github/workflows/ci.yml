@@ -26,6 +26,14 @@ jobs:
       - name: Set npm registry
         run: npm config set registry https://registry.npmjs.org/
 
+      - name: Fix lockfile registry for backend
+        working-directory: backend
+        run: sed -i 's|https://registry.npmmirror.com/|https://registry.npmjs.org/|g' package-lock.json
+
+      - name: Fix lockfile registry for frontend
+        working-directory: frontend
+        run: sed -i 's|https://registry.npmmirror.com/|https://registry.npmjs.org/|g' package-lock.json
+
       - name: Install backend dependencies
         working-directory: backend
         run: npm ci
