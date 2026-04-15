@@ -11,7 +11,9 @@ test.describe('中式人生模拟器', () => {
     await page.goto('/');
     await page.getByRole('button', { name: '开始新人生' }).click();
     await page.waitForURL(/\/life\/\d+/);
+    // 等待页面加载完成（状态栏出现）
     await expect(page.locator('text=/人生 #/')).toBeVisible();
+    await expect(page.locator('text=/岁/')).toBeVisible();
   });
 
   test('可以完整玩一年并查看结果', async ({ page }) => {
@@ -19,8 +21,9 @@ test.describe('中式人生模拟器', () => {
     await page.getByRole('button', { name: '开始新人生' }).click();
     await page.waitForURL(/\/life\/\d+/);
 
-    // 等待状态栏加载
+    // 等待页面加载完成
     await expect(page.locator('text=/岁/')).toBeVisible();
+    await expect(page.locator('text=加载人生中...')).toHaveCount(0);
 
     // 点击开始人生 / 下一年
     await page.getByRole('button', { name: /开始人生|下一年/ }).first().click();
@@ -49,6 +52,9 @@ test.describe('中式人生模拟器', () => {
     await page.getByRole('button', { name: '开始新人生' }).click();
     await page.waitForURL(/\/life\/\d+/);
 
+    // 等待页面加载完成
+    await expect(page.locator('text=/岁/')).toBeVisible();
+
     await page.getByRole('button', { name: /开始人生|下一年/ }).first().click();
 
     const optionBtn = page.locator('button:has-text("选这个 →")').first();
@@ -70,6 +76,9 @@ test.describe('中式人生模拟器', () => {
     await page.getByRole('button', { name: '开始新人生' }).click();
     await page.waitForURL(/\/life\/\d+/);
 
+    // 等待页面加载完成
+    await expect(page.locator('text=/岁/')).toBeVisible();
+
     // AI 按钮在初始状态就存在
     const aiBtn = page.getByRole('button', { name: '来点意外的' }).first();
     await expect(aiBtn).toBeVisible();
@@ -87,6 +96,9 @@ test.describe('中式人生模拟器', () => {
     await page.goto('/');
     await page.getByRole('button', { name: '开始新人生' }).click();
     await page.waitForURL(/\/life\/\d+/);
+
+    // 等待页面加载完成
+    await expect(page.locator('text=/岁/')).toBeVisible();
 
     await page.getByRole('button', { name: /开始人生|下一年/ }).first().click();
 
@@ -107,6 +119,9 @@ test.describe('中式人生模拟器', () => {
     await page.goto('/');
     await page.getByRole('button', { name: '开始新人生' }).click();
     await page.waitForURL(/\/life\/\d+/);
+
+    // 等待页面加载完成
+    await expect(page.locator('text=/岁/')).toBeVisible();
 
     page.on('dialog', (dialog) => dialog.accept());
     await page.getByRole('button', { name: '结束人生' }).click();
