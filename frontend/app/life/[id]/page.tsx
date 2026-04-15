@@ -166,6 +166,7 @@ export default function LifePage() {
       setResult(r);
       setTurn(null);
       setState(r.state);
+      setHumor(r.humor_quote);
       await fetchLogs();
 
       const hasPositive = r.results.some((x) => (x.delta ?? 0) > 0);
