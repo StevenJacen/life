@@ -23,6 +23,9 @@ jobs:
             backend/package-lock.json
             frontend/package-lock.json
 
+      - name: Set npm registry
+        run: npm config set registry https://registry.npmjs.org/
+
       - name: Install backend dependencies
         working-directory: backend
         run: npm ci
