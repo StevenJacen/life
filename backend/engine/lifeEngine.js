@@ -280,11 +280,15 @@ function chooseOption(lifeId, optionId) {
     VALUES (?, ?, ?, ?, ?)
   `).run(lifeId, state.age - 1, event.id, option.id, JSON.stringify(results));
 
+  const humor = getRandomHumor();
+  if (humor) bumpHumorUsage(humor.id);
+
   return {
     state: getLifeState(lifeId),
     event,
     option,
-    results
+    results,
+    humor_quote: humor
   };
 }
 

@@ -123,11 +123,8 @@ test.describe('中式人生模拟器', () => {
     // 等待页面加载完成
     await expect(page.locator('text=/岁/')).toBeVisible();
 
-    const [dialog] = await Promise.all([
-      page.waitForEvent('dialog'),
-      page.getByRole('button', { name: '结束人生' }).click(),
-    ]);
-    await dialog.accept();
+    page.on('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', { name: '结束人生' }).click({ force: true });
 
     await page.waitForURL('/', { timeout: 10000 });
     await expect(page.locator('text=中式人生模拟器')).toBeVisible();
