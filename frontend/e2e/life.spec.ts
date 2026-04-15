@@ -77,9 +77,9 @@ test.describe('中式人生模拟器', () => {
     // 直接点击 AI 按钮（不需要先玩一年）
     await aiBtn.click();
 
-    // 应该看到 toast 提示（AI 生成成功或提示限制/未配置）
+    // 应该看到 toast 提示（AI 生成成功或提示限制/未配置/API key 未设置）
     await expect(
-      page.locator('text=/AI 事件已生成|AI 生成失败|每3年最多|未配置/').first()
+      page.locator('text=/AI 事件已生成|AI 生成失败|每3年最多|未配置|DASHSCOPE_API_KEY/').first()
     ).toBeVisible({ timeout: 15000 });
   });
 

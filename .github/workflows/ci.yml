@@ -34,18 +34,13 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: Seed backend database
+        working-directory: backend
+        run: node db/seed.js
+
       - name: Install frontend dependencies
         working-directory: frontend
-        run: |
-          rm -f package-lock.json
-          npm install --registry https://registry.npmjs.org/ --verbose 2>&1 | tee npm-install.log || (tail -n 200 npm-install.log && exit 1)
-
-      - name: Upload npm install log
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: npm-install-log
-          path: frontend/npm-install.log
+        run: npm ci
 
       - name: Install Playwright Browsers
         working-directory: frontend
