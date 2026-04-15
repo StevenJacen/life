@@ -1,0 +1,287 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Animation classes */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+/* Typewriter effect */
+.typewriter {
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid;
+  animation: typing 0.5s steps(20, end), blink-caret 0.75s step-end infinite;
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: currentColor }
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Year transition flash overlay */
+@keyframes yearFlashPositive {
+  0% { opacity: 0; }
+  25% { opacity: 0.2; }
+  100% { opacity: 0; }
+}
+
+@keyframes yearFlashNegative {
+  0% { opacity: 0; }
+  25% { opacity: 0.2; }
+  100% { opacity: 0; }
+}
+
+@keyframes yearFlashNeutral {
+  0% { opacity: 0; }
+  20% { opacity: 0.12; }
+  100% { opacity: 0; }
+}
+
+.year-flash-positive {
+  background: radial-gradient(circle at 20% 20%, rgba(16, 185, 129, 0.25), transparent 55%);
+  animation: yearFlashPositive 0.8s ease-out;
+}
+
+.year-flash-negative {
+  background: radial-gradient(circle at 80% 20%, rgba(239, 68, 68, 0.25), transparent 55%);
+  animation: yearFlashNegative 0.8s ease-out;
+}
+
+.year-flash-neutral {
+  background: radial-gradient(circle at 50% 10%, rgba(99, 102, 241, 0.2), transparent 60%);
+  animation: yearFlashNeutral 0.7s ease-out;
+}
+
+/* 丝滑翻页效果 - 类似卡片翻页 */
+@keyframes slideShowIn {
+  0% {
+    opacity: 0;
+    transform: translateX(50px) scale(0.96);
+    filter: blur(4px);
+  }
+  60% {
+    opacity: 0.8;
+    transform: translateX(-5px) scale(0.99);
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes slideShowOut {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50px) scale(0.96);
+    filter: blur(4px);
+  }
+}
+
+@keyframes textReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cardFlipIn {
+  0% {
+    opacity: 0;
+    transform: perspective(1000px) rotateY(-15deg) translateX(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1000px) rotateY(0) translateX(0);
+  }
+}
+
+.animate-slide-show-in {
+  animation: slideShowIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-slide-show-out {
+  animation: slideShowOut 0.4s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+}
+
+.animate-text-reveal {
+  animation: textReveal 0.4s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.animate-card-flip {
+  animation: cardFlipIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+/* 年度卡片高亮效果 */
+.year-card-highlight {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.3), 0 4px 20px rgba(0, 0, 0, 0.1);
+  transform: scale(1.02);
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 下一年按钮脉冲效果 */
+@keyframes nextYearPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
+  }
+}
+
+.next-year-btn {
+  animation: nextYearPulse 2s infinite;
+}
+
+/* 历史事件 Toast - 从右侧滑入 */
+@keyframes toastSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toastSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.history-toast-enter {
+  animation: toastSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.history-toast-exit {
+  animation: toastSlideOut 0.3s ease-in forwards;
+}
+
+/* 进度条收缩动画 */
+@keyframes shrink {
+  0% { width: 100%; }
+  100% { width: 0%; }
+}
