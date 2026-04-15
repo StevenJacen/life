@@ -38,6 +38,10 @@ jobs:
         working-directory: backend
         run: node db/seed.js
 
+      - name: Seed humor library
+        working-directory: backend
+        run: node db/humorSeed.js
+
       - name: Install frontend dependencies
         working-directory: frontend
         run: |
