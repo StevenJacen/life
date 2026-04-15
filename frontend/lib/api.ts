@@ -64,6 +64,7 @@ export interface ChooseData {
   event: EventDef;
   option: EventOption;
   results: EffectResult[];
+  humor_quote: HumorItem | null;
 }
 
 export interface LogItem {
