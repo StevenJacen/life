@@ -78,7 +78,8 @@ jobs:
             sleep 2
           done
 
-          echo "Giving Next.js extra time to finish initial compilation..."
+          echo "Warming up Next.js dynamic routes..."
+          curl -sf http://localhost:3000/life/1 > /dev/null 2>&1 || true
           sleep 5
 
       - name: Run Playwright tests
