@@ -40,7 +40,15 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm ci
+        run: |
+          npm ci > npm-ci.log 2>&1 || (cat npm-ci.log && exit 1)
+
+      - name: Upload npm ci log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-ci-log
+          path: frontend/npm-ci.log
 
       - name: Install Playwright Browsers
         working-directory: frontend
