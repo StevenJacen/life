@@ -135,4 +135,62 @@ test.describe('中式人生模拟器', () => {
     await page.waitForURL('/', { timeout: 10000 });
     await expect(page.locator('text=中式人生模拟器')).toBeVisible();
   });
+
+  test('从半途开始流程并显示前半生回顾', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('link', { name: '从半途开始' })).toBeVisible();
+    await page.getByRole('link', { name: '从半途开始' }).click();
+    await page.waitForURL('/backstory');
+
+    // 填写表单
+    await expect(page.locator('text=从半途开始')).toBeVisible();
+    await page.locator('#age').fill('30');
+    await page.locator('#description').fill('测试用的前半生描述，毕业于普通大学，做了五年销售，存了一些钱。');
+
+    // Mock API 以绕过真实 AI 调用，确保测试稳定
+    const mockLife = {
+      id: 9999,
+      age: 30,
+      money: 50000,
+      attributes: { intelligence: 60, charm: 55, strength: 50, luck: 50 },
+      career: '销售经理',
+      family_class: '普通家庭',
+      education_level: '本科',
+      happiness: 65,
+      health: 70,
+      is_active: 1,
+      ended_at: null,
+      cause_of_death: null,
+      backstory: '测试用的前半生描述，毕业于普通大学，做了五年销售，存了一些钱。',
+      backstory_summary: '你在普通大学里度过了四年，毕业后投身销售行业，五年间积累了一些客户与存款。身体在应酬中略显疲惫，但对未来仍有期待。',
+      created_at: new Date().toISOString(),
+    };
+    await page.route('/api/life/from-backstory', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, data: mockLife }),
+      });
+    });
+    await page.route('/api/life/9999', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, data: mockLife }),
+      });
+    });
+
+    await page.getByRole('button', { name: '开启这段人生' }).click();
+    await page.waitForURL(/\/life\/\d+/);
+
+    // 验证前半生回顾卡片存在且默认展开
+    await expect(page.locator('text=前半生回顾')).toBeVisible();
+    await expect(page.locator('text=你在普通大学里度过了四年')).toBeVisible();
+
+    // 测试收起/展开
+    await page.getByRole('button', { name: '收起' }).click();
+    await expect(page.locator('text=你在普通大学里度过了四年')).not.toBeVisible();
+    await page.getByRole('button', { name: '展开' }).click();
+    await expect(page.locator('text=你在普通大学里度过了四年')).toBeVisible();
+  });
 });

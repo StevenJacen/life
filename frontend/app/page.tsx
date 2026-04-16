@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { api } from "@/lib/api";
 
 export default function Home() {
@@ -30,13 +31,21 @@ export default function Home() {
           <br />
           从出生到退休，体验一段独一无二的人生旅程。
         </p>
-        <button
-          onClick={startGame}
-          disabled={loading}
-          className="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-10 py-5 text-xl font-bold text-white shadow-lg hover:bg-indigo-700 hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 next-year-btn"
-        >
-          {loading ? "创建中..." : "开始新人生"}
-        </button>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button
+            onClick={startGame}
+            disabled={loading}
+            className="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-10 py-5 text-xl font-bold text-white shadow-lg hover:bg-indigo-700 hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 next-year-btn"
+          >
+            {loading ? "创建中..." : "开始新人生"}
+          </button>
+          <Link
+            href="/backstory"
+            className="inline-flex items-center justify-center rounded-2xl border-2 border-indigo-600 bg-white px-8 py-5 text-lg font-bold text-indigo-600 shadow-lg hover:bg-indigo-50 hover:-translate-y-1 transition-all duration-200"
+          >
+            从半途开始
+          </Link>
+        </div>
         <p className="mt-8 text-sm text-gray-400">powered by Next.js + Node.js + SQLite + AI</p>
       </div>
 

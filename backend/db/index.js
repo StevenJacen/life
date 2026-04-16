@@ -69,7 +69,7 @@ try {
   console.error('Migration check failed:', err);
 }
 
-// 迁移：确保 life_state 有 is_active / ended_at / cause_of_death
+// 迁移：确保 life_state 有 is_active / ended_at / cause_of_death / backstory
 try {
   const cols = db.prepare("PRAGMA table_info(life_state)").all();
   const colNames = cols.map(c => c.name);
@@ -81,6 +81,12 @@ try {
   }
   if (!colNames.includes('cause_of_death')) {
     db.exec('ALTER TABLE life_state ADD COLUMN cause_of_death TEXT DEFAULT NULL');
+  }
+  if (!colNames.includes('backstory')) {
+    db.exec('ALTER TABLE life_state ADD COLUMN backstory TEXT DEFAULT NULL');
+  }
+  if (!colNames.includes('backstory_summary')) {
+    db.exec('ALTER TABLE life_state ADD COLUMN backstory_summary TEXT DEFAULT NULL');
   }
 } catch (err) {
   console.error('Life state migration failed:', err);

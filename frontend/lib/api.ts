@@ -13,6 +13,8 @@ export interface LifeState {
   is_active: number;
   ended_at: string | null;
   cause_of_death: string | null;
+  backstory: string | null;
+  backstory_summary: string | null;
   created_at: string;
 }
 
@@ -124,6 +126,11 @@ export interface LifeSummary {
 
 export const api = {
   createLife: () => request<LifeState>("/api/life", { method: "POST" }),
+  fromBackstory: (age: number, description: string) =>
+    request<LifeState>("/api/life/from-backstory", {
+      method: "POST",
+      body: JSON.stringify({ age, description }),
+    }),
   getLife: (id: number) => request<LifeState>(`/api/life/${id}`),
   nextTurn: (id: number) => request<NextTurnData>(`/api/life/${id}/next-turn`, { method: "POST" }),
   chooseOption: (id: number, optionId: number) =>

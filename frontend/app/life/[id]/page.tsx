@@ -101,6 +101,7 @@ export default function LifePage() {
   const [message, setMessage] = useState<string>("");
   const [flashClass, setFlashClass] = useState<string>("");
   const [toast, setToast] = useState<{ show: boolean; title: string; description: string }>({ show: false, title: "", description: "" });
+  const [showSummary, setShowSummary] = useState(true);
 
   const fetchState = async () => {
     const s = await api.getLife(lifeId);
@@ -383,6 +384,29 @@ export default function LifePage() {
         <div className="grid gap-5 md:grid-cols-3">
           {/* 左侧 */}
           <div className="md:col-span-2 space-y-5">
+            {/* 前半生回顾 */}
+            {state.backstory_summary && (
+              <div className={`rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-violet-50/80 p-5 shadow-sm transition-all ${showSummary ? '' : 'opacity-90'}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">📖</span>
+                    <span className="font-bold text-indigo-900">前半生回顾</span>
+                  </div>
+                  <button
+                    onClick={() => setShowSummary(v => !v)}
+                    className="rounded-lg px-2 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100 transition"
+                  >
+                    {showSummary ? '收起' : '展开'}
+                  </button>
+                </div>
+                {showSummary && (
+                  <p className="mt-3 text-sm leading-relaxed text-indigo-800">
+                    {state.backstory_summary}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* 年度事件头卡 */}
             {logs.length > 0 && (
               <div className="animate-slide-show-in rounded-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 p-4 text-white shadow-xl">

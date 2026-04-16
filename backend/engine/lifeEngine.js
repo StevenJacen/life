@@ -175,6 +175,71 @@ function createLife() {
   return getLifeState(info.lastInsertRowid);
 }
 
+function createLifeFromBackstory(backstory, summary, initState, events) {
+  const info = db.prepare(`
+    INSERT INTO life_state
+      (age, money, attributes, career, family_class, education_level, happiness, health, backstory, backstory_summary)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    initState.age,
+    initState.money,
+    JSON.stringify(initState.attributes),
+    initState.career,
+    initState.family_class,
+    initState.education_level,
+    initState.happiness,
+    initState.health,
+    backstory || null,
+    summary || null
+  );
+
+  const lifeId = info.lastInsertRowid;
+
+  // 将 AI 生成的伏笔事件写入 event_def
+  for (const ev of (events || [])) {
+    const evInfo = db.prepare(`
+      INSERT INTO event_def
+        (title, description, min_age, max_age, repeatable, once_per_life, weight_formula, is_ai_generated)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+    `).run(
+      ev.title,
+      ev.description,
+      ev.min_age,
+      ev.max_age,
+      ev.repeatable ? 1 : 0,
+      ev.once_per_life ? 1 : 0,
+      JSON.stringify(ev.weight_formula || { base: 200 })
+    );
+    const eventId = evInfo.lastInsertRowid;
+
+    // 插入条件（如果有）
+    for (const cond of (ev.conditions || [])) {
+      db.prepare(`
+        INSERT INTO event_condition (event_id, type, operator, target, value)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(eventId, cond.type, cond.operator, cond.target || null, String(cond.value));
+    }
+
+    // 插入选项及效果
+    for (const opt of (ev.options || [])) {
+      const optInfo = db.prepare(`
+        INSERT INTO event_option (event_id, text, description)
+        VALUES (?, ?, ?)
+      `).run(eventId, opt.text, opt.description || '');
+      const optionId = optInfo.lastInsertRowid;
+
+      for (const eff of (opt.effects || [])) {
+        db.prepare(`
+          INSERT INTO event_effect (option_id, type, target, value, probability)
+          VALUES (?, ?, ?, ?, ?)
+        `).run(optionId, eff.type, eff.target || null, typeof eff.value === 'number' ? eff.value : 0, typeof eff.probability === 'number' ? eff.probability : 1.0);
+      }
+    }
+  }
+
+  return getLifeState(lifeId);
+}
+
 function getEventsByAge(age) {
   return db.prepare(`
     SELECT * FROM event_def
@@ -585,6 +650,7 @@ function getSummary(lifeId) {
 
 module.exports = {
   createLife,
+  createLifeFromBackstory,
   getLifeState,
   nextTurn,
   chooseOption,

@@ -20,6 +20,33 @@ app.post('/api/life', (req, res) => {
   }
 });
 
+// 从半途开始新人生
+app.post('/api/life/from-backstory', async (req, res) => {
+  try {
+    const { age, description } = req.body;
+    const startAge = Number(age);
+    if (!Number.isFinite(startAge) || startAge < 10 || startAge > 80) {
+      return res.status(400).json({ success: false, error: '年龄需在 10-80 岁之间' });
+    }
+    if (!description || typeof description !== 'string' || description.trim().length < 5) {
+      return res.status(400).json({ success: false, error: '请输入至少5个字的前半生描述' });
+    }
+
+    const backstory = description.trim();
+    const aiResult = await aiService.generateBackstoryInit(startAge, backstory);
+    const life = lifeEngine.createLifeFromBackstory(
+      backstory,
+      aiResult.summary,
+      aiResult.state,
+      aiResult.events
+    );
+
+    res.json({ success: true, data: life });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // 获取人生状态
 app.get('/api/life/:id', (req, res) => {
   try {
