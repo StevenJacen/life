@@ -95,6 +95,7 @@ export default function LifePage() {
   const [turn, setTurn] = useState<NextTurnData | null>(null);
   const [result, setResult] = useState<ChooseData | null>(null);
   const [humor, setHumor] = useState<HumorItem | null>(null);
+  const [suddenEvents, setSuddenEvents] = useState<Array<{ event: any; results: any[] }>>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string>("");
   const [flashClass, setFlashClass] = useState<string>("");
@@ -130,6 +131,7 @@ export default function LifePage() {
   const handleNextTurn = async () => {
     setLoading(true);
     setResult(null);
+    setSuddenEvents([]);
     setMessage("");
     try {
       const t = await api.nextTurn(lifeId);
@@ -150,8 +152,13 @@ export default function LifePage() {
       setState(data.state);
       setTurn(null);
       setHumor(data.humor_quote);
+      setSuddenEvents(data.sudden_events || []);
       await fetchLogs();
       triggerFlash("neutral");
+
+      for (const se of data.sudden_events || []) {
+        showToast(`[突发] ${se.event.title}`, se.event.description);
+      }
     } catch (e: any) {
       setMessage(e.message || "请求失败");
     } finally {
@@ -167,6 +174,7 @@ export default function LifePage() {
       setTurn(null);
       setState(r.state);
       setHumor(r.humor_quote);
+      setSuddenEvents(r.sudden_events || []);
       await fetchLogs();
 
       const hasPositive = r.results.some((x) => (x.delta ?? 0) > 0);
@@ -177,6 +185,10 @@ export default function LifePage() {
 
       if (r.event.title && r.event.title !== "平淡的一年") {
         showToast(r.event.title, `你选择了「${r.option.text}」，人生轨迹发生了变化。`);
+      }
+
+      for (const se of r.sudden_events || []) {
+        showToast(`[突发] ${se.event.title}`, se.event.description);
       }
     } catch (e: any) {
       setMessage(e.message || "请求失败");
@@ -350,6 +362,41 @@ export default function LifePage() {
 
               {!turn && !result && (
                 <div className="flex flex-col items-center justify-center py-14 animate-fade-in-up">
+                  {suddenEvents.length > 0 && (
+                    <div className="mb-6 w-full max-w-lg space-y-4">
+                      {suddenEvents.map((se, idx) => {
+                        const hasNegative = se.results.some((r: any) => (r.delta ?? 0) < 0);
+                        const cardClass = hasNegative
+                          ? "border-rose-200 bg-gradient-to-br from-rose-50 to-orange-50"
+                          : "border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50";
+                        const titleClass = hasNegative ? "text-rose-700" : "text-emerald-700";
+                        return (
+                          <div key={idx} className={`rounded-2xl border ${cardClass} p-5 animate-slide-show-in`}>
+                            <div className={`mb-1 text-sm font-bold ${titleClass}`}>⚡ {se.event.title}</div>
+                            <p className="text-gray-700">{se.event.description}</p>
+                            {se.results.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {se.results.map((r: any, i: number) => {
+                                  const labelMap: Record<string, string> = {
+                                    money: "💰 财力", attribute: r.target ? `🎯 ${r.target}` : "🎯 属性",
+                                    career: "💼 职业", education: "🎓 学历", family: "🏠 家庭",
+                                    happiness: "😊 快乐", health: "❤️ 健康",
+                                  };
+                                  const val = r.delta ?? 0;
+                                  const tone = val > 0 ? "bg-emerald-100 text-emerald-700 border-emerald-200" : val < 0 ? "bg-rose-100 text-rose-700 border-rose-200" : "bg-gray-100 text-gray-700 border-gray-200";
+                                  return (
+                                    <span key={i} className={`rounded-full border px-3 py-1 text-xs font-medium ${tone}`}>
+                                      {labelMap[r.type] || r.type} {val > 0 ? `+${val}` : val} → {r.newValue}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                   <p className="mb-6 text-center text-lg text-gray-600">这一年剧本尚未翻开，点击按钮推进人生。</p>
                   <div className="flex flex-wrap items-center justify-center gap-3">
                     <button
@@ -475,6 +522,41 @@ export default function LifePage() {
                     </div>
                   )}
 
+                  {result.sudden_events && result.sudden_events.length > 0 && (
+                    <div className="rounded-2xl border border-rose-100 bg-rose-50/60 p-5 animate-slide-show-in">
+                      <div className="mb-3 flex items-center gap-2">
+                        <span className="text-lg">⚡</span>
+                        <span className="font-semibold text-rose-700">突发事件</span>
+                      </div>
+                      <div className="space-y-3">
+                        {result.sudden_events.map((se, idx) => (
+                          <div key={idx}>
+                            <div className="font-medium text-rose-800">{se.event.title}</div>
+                            <p className="text-sm text-rose-700/80">{se.event.description}</p>
+                            {se.results.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {se.results.map((r, i) => {
+                                  const labelMap: Record<string, string> = {
+                                    money: "💰 财力", attribute: r.target ? `🎯 ${r.target}` : "🎯 属性",
+                                    career: "💼 职业", education: "🎓 学历", family: "🏠 家庭",
+                                    happiness: "😊 快乐", health: "❤️ 健康",
+                                  };
+                                  const val = r.delta ?? 0;
+                                  const tone = val > 0 ? "bg-emerald-100 text-emerald-700 border-emerald-200" : val < 0 ? "bg-rose-100 text-rose-700 border-rose-200" : "bg-gray-100 text-gray-700 border-gray-200";
+                                  return (
+                                    <span key={i} className={`rounded-full border px-3 py-1 text-xs font-medium ${tone}`}>
+                                      {labelMap[r.type] || r.type} {val > 0 ? `+${val}` : val} → {r.newValue}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="text-center">
                     <button
                       onClick={handleNextTurn}
@@ -515,9 +597,14 @@ export default function LifePage() {
                 logs.slice().reverse().map((log) => (
                   <div key={log.id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
                     <div className="mb-2 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">{log.age}岁</span>
                         <span className="font-mono font-bold text-purple-600">{log.event_title || "平淡的一年"}</span>
+                        {log.sudden_title && (
+                          <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-600">
+                            ⚡{log.sudden_title}
+                          </span>
+                        )}
                       </div>
                     </div>
                     {log.option_text && <div className="mb-2 text-sm text-gray-600">选择了：{log.option_text}</div>}

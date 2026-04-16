@@ -64,6 +64,35 @@ CREATE TABLE IF NOT EXISTS event_effect (
   probability REAL DEFAULT 1.0
 );
 
+-- 突发事件定义表
+CREATE TABLE IF NOT EXISTS sudden_event_def (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  min_age INTEGER DEFAULT 0,
+  max_age INTEGER DEFAULT 999,
+  base_probability REAL DEFAULT 0.1,
+  stat_conditions TEXT DEFAULT '[]' CHECK(json_valid(stat_conditions)),
+  career_conditions TEXT DEFAULT '[]' CHECK(json_valid(career_conditions)),
+  effects TEXT DEFAULT '[]' CHECK(json_valid(effects)),
+  once_per_life INTEGER DEFAULT 0,
+  repeatable INTEGER DEFAULT 1,
+  cooldown_years INTEGER DEFAULT 0,
+  required_event_ids TEXT DEFAULT '[]' CHECK(json_valid(required_event_ids)),
+  year_tag TEXT DEFAULT NULL,
+  year_tag_color TEXT DEFAULT 'red',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 突发事件触发日志
+CREATE TABLE IF NOT EXISTS sudden_event_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  life_id INTEGER NOT NULL REFERENCES life_state(id) ON DELETE CASCADE,
+  age INTEGER NOT NULL,
+  event_id INTEGER NOT NULL REFERENCES sudden_event_def(id),
+  triggered_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 事件日志
 CREATE TABLE IF NOT EXISTS event_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,5 +101,7 @@ CREATE TABLE IF NOT EXISTS event_log (
   event_id INTEGER REFERENCES event_def(id),
   option_id INTEGER REFERENCES event_option(id),
   result TEXT DEFAULT '{}' CHECK(json_valid(result)),
+  sudden_event_id INTEGER REFERENCES sudden_event_def(id),
+  sudden_result TEXT DEFAULT '[]' CHECK(json_valid(sudden_result)),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

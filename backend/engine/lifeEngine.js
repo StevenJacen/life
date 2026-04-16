@@ -199,6 +199,109 @@ function hasEventOccurred(lifeId, eventId) {
   return row.count > 0;
 }
 
+// ========== 突发事件系统 ==========
+
+function getSuddenEventsByAge(age) {
+  return db.prepare(`
+    SELECT * FROM sudden_event_def
+    WHERE min_age <= ? AND max_age >= ?
+  `).all(age, age);
+}
+
+function hasSuddenEventOccurred(lifeId, eventId) {
+  const row = db.prepare('SELECT COUNT(*) as count FROM sudden_event_log WHERE life_id = ? AND event_id = ?').get(lifeId, eventId);
+  return row.count > 0;
+}
+
+function hasSuddenEventInCooldown(lifeId, eventId, cooldownYears, currentAge) {
+  if (!cooldownYears || cooldownYears <= 0) return false;
+  const row = db.prepare(`
+    SELECT COUNT(*) as count FROM sudden_event_log
+    WHERE life_id = ? AND event_id = ? AND age >= ?
+  `).get(lifeId, eventId, currentAge - cooldownYears);
+  return row.count > 0;
+}
+
+function evalSuddenStatConditions(conditions, state) {
+  if (!Array.isArray(conditions) || conditions.length === 0) return true;
+  return conditions.every(c => {
+    let actual;
+    if (c.stat === 'money') actual = state.money;
+    else if (c.stat === 'health') actual = state.health;
+    else if (c.stat === 'happiness') actual = state.happiness;
+    else if (c.stat === 'intelligence') actual = state.attributes.intelligence ?? 0;
+    else if (c.stat === 'charm') actual = state.attributes.charm ?? 0;
+    else return false;
+    return compare(actual, c.operator, c.value);
+  });
+}
+
+function calculateSuddenProbability(event, state) {
+  let prob = event.base_probability || 0;
+
+  // 动态倍率（参考 reference 项目）
+  if (state.health < 20) prob *= 2.0;
+  else if (state.health < 40) prob *= 1.5;
+  else if (state.health > 70) prob *= 0.3;
+
+  if (state.money < 10) prob *= 1.8;
+
+  if (state.happiness > 70) prob *= 0.8;
+  else if (state.happiness < 20) prob *= 1.5;
+
+  // 体制内保护：35岁裁员概率降低
+  if (event.title === '35岁裁员' && state.career === 'civil') {
+    prob *= 0.3;
+  }
+
+  return Math.min(0.8, Math.max(0, prob));
+}
+
+function checkSuddenEvents(lifeId, state) {
+  const events = getSuddenEventsByAge(state.age);
+  const triggered = [];
+
+  for (const ev of events) {
+    // 一生一次
+    if (ev.once_per_life && hasSuddenEventOccurred(lifeId, ev.id)) continue;
+    // 不可重复
+    if (!ev.repeatable && hasSuddenEventOccurred(lifeId, ev.id)) continue;
+    // 冷却期
+    if (hasSuddenEventInCooldown(lifeId, ev.id, ev.cooldown_years, state.age)) continue;
+
+    // 职业条件
+    const careerConds = JSON.parse(ev.career_conditions || '[]');
+    if (careerConds.length > 0 && !careerConds.includes(state.career)) continue;
+
+    // 属性条件
+    const statConds = JSON.parse(ev.stat_conditions || '[]');
+    if (!evalSuddenStatConditions(statConds, state)) continue;
+
+    // 前置事件链
+    const requiredIds = JSON.parse(ev.required_event_ids || '[]');
+    if (requiredIds.length > 0) {
+      const allTriggered = requiredIds.every(id => hasSuddenEventOccurred(lifeId, id));
+      if (!allTriggered) continue;
+    }
+
+    // 概率判定
+    const finalProb = calculateSuddenProbability(ev, state);
+    if (Math.random() < finalProb) {
+      triggered.push(ev);
+    }
+  }
+
+  // 每年最多触发 2 个突发事件
+  return triggered.slice(0, 2);
+}
+
+function recordSuddenEvent(lifeId, age, eventId) {
+  db.prepare(`
+    INSERT INTO sudden_event_log (life_id, age, event_id)
+    VALUES (?, ?, ?)
+  `).run(lifeId, age, eventId);
+}
+
 function nextTurn(lifeId) {
   const state = getLifeState(lifeId);
   if (!state) throw new Error('Life not found');
@@ -257,6 +360,16 @@ function chooseOption(lifeId, optionId) {
   // 年龄增长
   state.age += 1;
 
+  // 检查突发事件
+  const suddenEvents = checkSuddenEvents(lifeId, state);
+  let suddenResults = [];
+  for (const se of suddenEvents) {
+    const seEffects = JSON.parse(se.effects || '[]');
+    const seRes = applyEffects(seEffects, state);
+    suddenResults.push({ event: se, results: seRes });
+    recordSuddenEvent(lifeId, state.age - 1, se.id);
+  }
+
   // 更新 life_state
   db.prepare(`
     UPDATE life_state
@@ -275,10 +388,19 @@ function chooseOption(lifeId, optionId) {
   );
 
   // 写入日志
+  const suddenEventId = suddenEvents.length > 0 ? suddenEvents[0].id : null;
   db.prepare(`
-    INSERT INTO event_log (life_id, age, event_id, option_id, result)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(lifeId, state.age - 1, event.id, option.id, JSON.stringify(results));
+    INSERT INTO event_log (life_id, age, event_id, option_id, result, sudden_event_id, sudden_result)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    lifeId,
+    state.age - 1,
+    event.id,
+    option.id,
+    JSON.stringify(results),
+    suddenEventId,
+    JSON.stringify(suddenResults)
+  );
 
   const humor = getRandomHumor();
   if (humor) bumpHumorUsage(humor.id);
@@ -288,7 +410,8 @@ function chooseOption(lifeId, optionId) {
     event,
     option,
     results,
-    humor_quote: humor
+    humor_quote: humor,
+    sudden_events: suddenResults
   };
 }
 
@@ -297,19 +420,38 @@ function skipYear(lifeId) {
   if (!state) throw new Error('Life not found');
 
   state.age += 1;
+
+  // 检查突发事件（平淡的一年里也可能有意外）
+  const suddenEvents = checkSuddenEvents(lifeId, state);
+  let suddenResults = [];
+  for (const se of suddenEvents) {
+    const seEffects = JSON.parse(se.effects || '[]');
+    const seRes = applyEffects(seEffects, state);
+    suddenResults.push({ event: se, results: seRes });
+    recordSuddenEvent(lifeId, state.age - 1, se.id);
+  }
+
   db.prepare(`
     UPDATE life_state SET age = ? WHERE id = ?
   `).run(state.age, lifeId);
 
   db.prepare(`
-    INSERT INTO event_log (life_id, age, event_id, option_id, result)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(lifeId, state.age - 1, null, null, JSON.stringify([{ type: 'age', delta: 1, newValue: state.age }]));
+    INSERT INTO event_log (life_id, age, event_id, option_id, result, sudden_event_id, sudden_result)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    lifeId,
+    state.age - 1,
+    null,
+    null,
+    JSON.stringify([{ type: 'age', delta: 1, newValue: state.age }]),
+    suddenEvents.length > 0 ? suddenEvents[0].id : null,
+    JSON.stringify(suddenResults)
+  );
 
   const humor = getRandomHumor();
   if (humor) bumpHumorUsage(humor.id);
 
-  return { state: getLifeState(lifeId), humor_quote: humor };
+  return { state: getLifeState(lifeId), humor_quote: humor, sudden_events: suddenResults };
 }
 
 function getRandomHumor() {
@@ -327,10 +469,11 @@ function bumpHumorUsage(id) {
 
 function getLogs(lifeId) {
   return db.prepare(`
-    SELECT el.*, ed.title as event_title, eo.text as option_text
+    SELECT el.*, ed.title as event_title, eo.text as option_text, sed.title as sudden_title
     FROM event_log el
     LEFT JOIN event_def ed ON el.event_id = ed.id
     LEFT JOIN event_option eo ON el.option_id = eo.id
+    LEFT JOIN sudden_event_def sed ON el.sudden_event_id = sed.id
     WHERE el.life_id = ?
     ORDER BY el.created_at DESC
   `).all(lifeId);

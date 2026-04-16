@@ -55,7 +55,21 @@ function insertEvent(ev, isAiGenerated = false) {
 module.exports = db;
 module.exports.insertEvent = insertEvent;
 
-// 在 Serverless 环境（如 Vercel）中自动 seed，如果数据库为空
+// 迁移：确保 event_log 有 sudden 相关列
+try {
+  const cols = db.prepare("PRAGMA table_info(event_log)").all();
+  const colNames = cols.map(c => c.name);
+  if (!colNames.includes('sudden_event_id')) {
+    db.exec('ALTER TABLE event_log ADD COLUMN sudden_event_id INTEGER REFERENCES sudden_event_def(id)');
+  }
+  if (!colNames.includes('sudden_result')) {
+    db.exec("ALTER TABLE event_log ADD COLUMN sudden_result TEXT DEFAULT '[]' CHECK(json_valid(sudden_result))");
+  }
+} catch (err) {
+  console.error('Migration check failed:', err);
+}
+
+// 自动 seed，如果数据库为空
 try {
   const hasData = db.prepare("SELECT COUNT(*) as count FROM event_def").get();
   if (!hasData || hasData.count === 0) {
@@ -63,4 +77,14 @@ try {
   }
 } catch (err) {
   console.error('Seed check failed:', err);
+}
+
+// 自动 seed 突发事件
+try {
+  const hasSudden = db.prepare("SELECT COUNT(*) as count FROM sudden_event_def").get();
+  if (!hasSudden || hasSudden.count === 0) {
+    require('./suddenSeed');
+  }
+} catch (err) {
+  console.error('Sudden seed check failed:', err);
 }

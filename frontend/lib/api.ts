@@ -54,9 +54,21 @@ export interface NextTurnData {
   humor_quote: HumorItem | null;
 }
 
+export interface SuddenEvent {
+  id: number;
+  title: string;
+  description: string;
+}
+
+export interface SuddenEventResult {
+  event: SuddenEvent;
+  results: EffectResult[];
+}
+
 export interface SkipYearData {
   state: LifeState;
   humor_quote: HumorItem | null;
+  sudden_events: SuddenEventResult[];
 }
 
 export interface ChooseData {
@@ -65,6 +77,7 @@ export interface ChooseData {
   option: EventOption;
   results: EffectResult[];
   humor_quote: HumorItem | null;
+  sudden_events: SuddenEventResult[];
 }
 
 export interface LogItem {
@@ -77,6 +90,7 @@ export interface LogItem {
   created_at: string;
   event_title: string;
   option_text: string;
+  sudden_title?: string;
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
