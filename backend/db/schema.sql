@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS life_state (
   cause_of_death TEXT DEFAULT NULL,
   backstory TEXT DEFAULT NULL,
   backstory_summary TEXT DEFAULT NULL,
+  role_model TEXT DEFAULT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

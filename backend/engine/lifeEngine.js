@@ -175,11 +175,11 @@ function createLife() {
   return getLifeState(info.lastInsertRowid);
 }
 
-function createLifeFromBackstory(backstory, summary, initState, events) {
+function createLifeFromBackstory(backstory, summary, initState, events, roleModel) {
   const info = db.prepare(`
     INSERT INTO life_state
-      (age, money, attributes, career, family_class, education_level, happiness, health, backstory, backstory_summary)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (age, money, attributes, career, family_class, education_level, happiness, health, backstory, backstory_summary, role_model)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     initState.age,
     initState.money,
@@ -190,7 +190,8 @@ function createLifeFromBackstory(backstory, summary, initState, events) {
     initState.happiness,
     initState.health,
     backstory || null,
-    summary || null
+    summary || null,
+    roleModel || null
   );
 
   const lifeId = info.lastInsertRowid;

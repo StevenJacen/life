@@ -146,6 +146,7 @@ test.describe('中式人生模拟器', () => {
     await expect(page.locator('text=从半途开始')).toBeVisible();
     await page.locator('#age').fill('30');
     await page.locator('#description').fill('测试用的前半生描述，毕业于普通大学，做了五年销售，存了一些钱。');
+    await page.getByRole('button', { name: '韦小宝' }).click();
 
     // Mock API 以绕过真实 AI 调用，确保测试稳定
     const mockLife = {
@@ -163,6 +164,7 @@ test.describe('中式人生模拟器', () => {
       cause_of_death: null,
       backstory: '测试用的前半生描述，毕业于普通大学，做了五年销售，存了一些钱。',
       backstory_summary: '你在普通大学里度过了四年，毕业后投身销售行业，五年间积累了一些客户与存款。身体在应酬中略显疲惫，但对未来仍有期待。',
+      role_model: '韦小宝',
       created_at: new Date().toISOString(),
     };
     await page.route('/api/life/from-backstory', async (route) => {
@@ -186,6 +188,7 @@ test.describe('中式人生模拟器', () => {
     // 验证前半生回顾卡片存在且默认展开
     await expect(page.locator('text=前半生回顾')).toBeVisible();
     await expect(page.locator('text=你在普通大学里度过了四年')).toBeVisible();
+    await expect(page.locator('text=内心角色：韦小宝')).toBeVisible();
 
     // 测试收起/展开
     await page.getByRole('button', { name: '收起' }).click();

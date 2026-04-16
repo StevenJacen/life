@@ -88,6 +88,9 @@ try {
   if (!colNames.includes('backstory_summary')) {
     db.exec('ALTER TABLE life_state ADD COLUMN backstory_summary TEXT DEFAULT NULL');
   }
+  if (!colNames.includes('role_model')) {
+    db.exec('ALTER TABLE life_state ADD COLUMN role_model TEXT DEFAULT NULL');
+  }
 } catch (err) {
   console.error('Life state migration failed:', err);
 }

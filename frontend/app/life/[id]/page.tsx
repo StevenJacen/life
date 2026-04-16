@@ -279,6 +279,9 @@ export default function LifePage() {
               <div>
                 <div className="text-lg font-bold text-gray-900">人生 #{state.id}</div>
                 <div className="text-sm text-gray-500">{state.age} 岁 · {state.career}</div>
+                {state.role_model && (
+                  <div className="mt-0.5 text-xs text-indigo-600 font-medium">内心角色：{state.role_model}</div>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">

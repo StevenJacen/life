@@ -148,12 +148,12 @@ function normalizeEvent(raw) {
   return event;
 }
 
-async function generateBackstoryInit(age, description) {
+async function generateBackstoryInit(age, description, roleModel) {
   if (!API_KEY) {
     throw new Error('DASHSCOPE_API_KEY not configured');
   }
 
-  const prompt = buildBackstoryPrompt(age, description);
+  const prompt = buildBackstoryPrompt(age, description, roleModel);
 
   const response = await fetch(ENDPOINT, {
     method: 'POST',
@@ -198,12 +198,13 @@ async function generateBackstoryInit(age, description) {
   return normalizeBackstoryInit(parsed);
 }
 
-function buildBackstoryPrompt(age, description) {
+function buildBackstoryPrompt(age, description, roleModel) {
+  const rolePart = roleModel ? `\n- 内心角色/参考样例：${roleModel}（请让生成的总结和事件带有这位角色的气质、命运轨迹或经典抉择的影子，但不要直接出现角色名，而是用「仿佛」「像极了」「某种熟悉的既视感」等中式含蓄表达来暗示）` : '';
   return `[人生模拟器 - 从半途开始]
 
 玩家设定：
 - 开始年龄：${age}岁
-- 前半生描述：${description}
+- 前半生描述：${description}${rolePart}
 
 请生成以下内容：
 1. summary：一段4-6句话的「前半生回顾」，要有中式生活感和吐槽风格。
@@ -217,7 +218,7 @@ function buildBackstoryPrompt(age, description) {
    - happiness（0-100整数）
    - attributes：{intelligence, charm, strength, luck}，每项0-100整数
 3. events：为后半生埋下4-6个伏笔事件。这些事件将在游戏中以高概率触发。要求：
-   - 每个事件贴合玩家的前半生设定
+   - 每个事件贴合玩家的前半生设定${roleModel ? '，并隐约透出该角色的命运影子' : ''}
    - weight_formula.base 设为 150-250 之间
    - min_age 不小于 ${age}，max_age 不大于 100
    - 标题5-10字，描述50-120字

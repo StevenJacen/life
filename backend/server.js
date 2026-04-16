@@ -23,7 +23,7 @@ app.post('/api/life', (req, res) => {
 // 从半途开始新人生
 app.post('/api/life/from-backstory', async (req, res) => {
   try {
-    const { age, description } = req.body;
+    const { age, description, role_model } = req.body;
     const startAge = Number(age);
     if (!Number.isFinite(startAge) || startAge < 10 || startAge > 80) {
       return res.status(400).json({ success: false, error: '年龄需在 10-80 岁之间' });
@@ -33,12 +33,14 @@ app.post('/api/life/from-backstory', async (req, res) => {
     }
 
     const backstory = description.trim();
-    const aiResult = await aiService.generateBackstoryInit(startAge, backstory);
+    const roleModel = typeof role_model === 'string' ? role_model.trim() : '';
+    const aiResult = await aiService.generateBackstoryInit(startAge, backstory, roleModel || undefined);
     const life = lifeEngine.createLifeFromBackstory(
       backstory,
       aiResult.summary,
       aiResult.state,
-      aiResult.events
+      aiResult.events,
+      roleModel || undefined
     );
 
     res.json({ success: true, data: life });
