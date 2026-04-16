@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["1314138d9p.zicp.fun"],
   async rewrites() {
     return [
       {
