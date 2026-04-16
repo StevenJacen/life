@@ -137,7 +137,7 @@ export default function LifePage() {
       const t = await api.nextTurn(lifeId);
       setTurn(t);
       setHumor(t.humor_quote);
-      if (t.event) triggerFlash("neutral");
+      // 闪光效果移到结果阶段，选项展示阶段不闪光
     } catch (e: any) {
       setMessage(e.message || "请求失败");
     } finally {
@@ -154,10 +154,14 @@ export default function LifePage() {
       setHumor(data.humor_quote);
       setSuddenEvents(data.sudden_events || []);
       await fetchLogs();
-      triggerFlash("neutral");
 
-      for (const se of data.sudden_events || []) {
-        showToast(`[突发] ${se.event.title}`, se.event.description);
+      // 只在有突发事件或显著变化时闪光
+      if (data.sudden_events && data.sudden_events.length > 0) {
+        const net = data.sudden_events.reduce((sum, se) => sum + se.results.reduce((s, r) => s + (r.delta ?? 0), 0), 0);
+        triggerFlash(net < 0 ? "negative" : net > 0 ? "positive" : "neutral");
+        for (const se of data.sudden_events || []) {
+          showToast(`[突发] ${se.event.title}`, se.event.description);
+        }
       }
     } catch (e: any) {
       setMessage(e.message || "请求失败");
@@ -177,11 +181,18 @@ export default function LifePage() {
       setSuddenEvents(r.sudden_events || []);
       await fetchLogs();
 
-      const hasPositive = r.results.some((x) => (x.delta ?? 0) > 0);
-      const hasNegative = r.results.some((x) => (x.delta ?? 0) < 0);
-      if (hasNegative) triggerFlash("negative");
-      else if (hasPositive) triggerFlash("positive");
-      else triggerFlash("neutral");
+      // 判断是否值得闪光：有突发事件、或有显著变化（任意 delta 绝对值 >= 10）
+      const hasSudden = (r.sudden_events ?? []).length > 0;
+      const maxDelta = Math.max(...r.results.map((x) => Math.abs(x.delta ?? 0)), 0);
+      const shouldFlash = hasSudden || maxDelta >= 10;
+
+      if (shouldFlash) {
+        const hasNegative = r.results.some((x) => (x.delta ?? 0) < 0) || (r.sudden_events || []).some((se) => se.results.some((x: any) => (x.delta ?? 0) < 0));
+        const hasPositive = r.results.some((x) => (x.delta ?? 0) > 0) || (r.sudden_events || []).some((se) => se.results.some((x: any) => (x.delta ?? 0) > 0));
+        if (hasNegative) triggerFlash("negative");
+        else if (hasPositive) triggerFlash("positive");
+        else triggerFlash("neutral");
+      }
 
       if (r.event.title && r.event.title !== "平淡的一年") {
         showToast(r.event.title, `你选择了「${r.option.text}」，人生轨迹发生了变化。`);

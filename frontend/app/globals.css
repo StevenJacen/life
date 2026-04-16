@@ -68,38 +68,38 @@ body {
   animation: slideIn 0.3s ease-out forwards;
 }
 
-/* Year flash effects */
+/* Year flash effects - 只在重大事件触发，因此效果更明显 */
 @keyframes yearFlashPositive {
   0% { opacity: 0; }
-  25% { opacity: 0.2; }
+  30% { opacity: 0.45; }
   100% { opacity: 0; }
 }
 
 @keyframes yearFlashNegative {
   0% { opacity: 0; }
-  25% { opacity: 0.2; }
+  30% { opacity: 0.45; }
   100% { opacity: 0; }
 }
 
 @keyframes yearFlashNeutral {
   0% { opacity: 0; }
-  20% { opacity: 0.12; }
+  30% { opacity: 0.35; }
   100% { opacity: 0; }
 }
 
 .year-flash-positive {
-  background: radial-gradient(circle at 20% 20%, rgba(16, 185, 129, 0.25), transparent 55%);
-  animation: yearFlashPositive 0.8s ease-out;
+  background: radial-gradient(circle at 20% 20%, rgba(16, 185, 129, 0.4), transparent 55%);
+  animation: yearFlashPositive 1s ease-out;
 }
 
 .year-flash-negative {
-  background: radial-gradient(circle at 80% 20%, rgba(239, 68, 68, 0.25), transparent 55%);
-  animation: yearFlashNegative 0.8s ease-out;
+  background: radial-gradient(circle at 80% 20%, rgba(239, 68, 68, 0.4), transparent 55%);
+  animation: yearFlashNegative 1s ease-out;
 }
 
 .year-flash-neutral {
-  background: radial-gradient(circle at 50% 10%, rgba(99, 102, 241, 0.2), transparent 60%);
-  animation: yearFlashNeutral 0.7s ease-out;
+  background: radial-gradient(circle at 50% 10%, rgba(99, 102, 241, 0.35), transparent 60%);
+  animation: yearFlashNeutral 0.9s ease-out;
 }
 
 /* Card flip and slide show */
