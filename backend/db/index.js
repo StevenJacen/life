@@ -69,6 +69,23 @@ try {
   console.error('Migration check failed:', err);
 }
 
+// 迁移：确保 life_state 有 is_active / ended_at / cause_of_death
+try {
+  const cols = db.prepare("PRAGMA table_info(life_state)").all();
+  const colNames = cols.map(c => c.name);
+  if (!colNames.includes('is_active')) {
+    db.exec('ALTER TABLE life_state ADD COLUMN is_active INTEGER DEFAULT 1');
+  }
+  if (!colNames.includes('ended_at')) {
+    db.exec('ALTER TABLE life_state ADD COLUMN ended_at DATETIME DEFAULT NULL');
+  }
+  if (!colNames.includes('cause_of_death')) {
+    db.exec('ALTER TABLE life_state ADD COLUMN cause_of_death TEXT DEFAULT NULL');
+  }
+} catch (err) {
+  console.error('Life state migration failed:', err);
+}
+
 // 自动 seed，如果数据库为空
 try {
   const hasData = db.prepare("SELECT COUNT(*) as count FROM event_def").get();

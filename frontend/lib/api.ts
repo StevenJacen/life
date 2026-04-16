@@ -10,6 +10,9 @@ export interface LifeState {
   education_level: string;
   happiness: number;
   health: number;
+  is_active: number;
+  ended_at: string | null;
+  cause_of_death: string | null;
   created_at: string;
 }
 
@@ -69,6 +72,8 @@ export interface SkipYearData {
   state: LifeState;
   humor_quote: HumorItem | null;
   sudden_events: SuddenEventResult[];
+  ended?: boolean;
+  cause_of_death?: string;
 }
 
 export interface ChooseData {
@@ -78,6 +83,8 @@ export interface ChooseData {
   results: EffectResult[];
   humor_quote: HumorItem | null;
   sudden_events: SuddenEventResult[];
+  ended?: boolean;
+  cause_of_death?: string;
 }
 
 export interface LogItem {
@@ -103,6 +110,18 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return json.data as T;
 }
 
+export interface LifeSummary {
+  state: LifeState;
+  totalYears: number;
+  totalEvents: number;
+  totalSudden: number;
+  isMarried: boolean;
+  maxMoney: number;
+  maxHappiness: number;
+  finalCareer: string;
+  finalEducation: string;
+}
+
 export const api = {
   createLife: () => request<LifeState>("/api/life", { method: "POST" }),
   getLife: (id: number) => request<LifeState>(`/api/life/${id}`),
@@ -116,4 +135,5 @@ export const api = {
   generateAIEvent: (id: number) => request<{ eventId: number; title: string; description: string; options: any[] }>(`/api/life/${id}/generate-ai-event`, { method: "POST" }),
   refreshHumor: () => request<{ inserted: number; total: number }>("/api/humor/refresh", { method: "POST" }),
   getLogs: (id: number) => request<LogItem[]>(`/api/life/${id}/logs`),
+  getSummary: (id: number) => request<LifeSummary>(`/api/life/${id}/summary`),
 };

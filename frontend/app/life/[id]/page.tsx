@@ -96,6 +96,7 @@ export default function LifePage() {
   const [result, setResult] = useState<ChooseData | null>(null);
   const [humor, setHumor] = useState<HumorItem | null>(null);
   const [suddenEvents, setSuddenEvents] = useState<Array<{ event: any; results: any[] }>>([]);
+  const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string>("");
   const [flashClass, setFlashClass] = useState<string>("");
@@ -116,6 +117,12 @@ export default function LifePage() {
     fetchState();
     fetchLogs();
   }, [lifeId]);
+
+  useEffect(() => {
+    if (state && state.is_active === 0 && !summary) {
+      api.getSummary(lifeId).then(setSummary);
+    }
+  }, [state, lifeId, summary]);
 
   const triggerFlash = (tone: "positive" | "negative" | "neutral") => {
     setFlashClass(`year-flash-${tone}`);
@@ -155,6 +162,14 @@ export default function LifePage() {
       setSuddenEvents(data.sudden_events || []);
       await fetchLogs();
 
+      if (data.ended) {
+        const s = await api.getSummary(lifeId);
+        setSummary(s);
+        triggerFlash("negative");
+        showToast("人生谢幕", data.cause_of_death || "这一生走到了尽头。");
+        return;
+      }
+
       // 只在有突发事件或显著变化时闪光
       if (data.sudden_events && data.sudden_events.length > 0) {
         const net = data.sudden_events.reduce((sum, se) => sum + se.results.reduce((s, r) => s + (r.delta ?? 0), 0), 0);
@@ -180,6 +195,14 @@ export default function LifePage() {
       setHumor(r.humor_quote);
       setSuddenEvents(r.sudden_events || []);
       await fetchLogs();
+
+      if (r.ended) {
+        const s = await api.getSummary(lifeId);
+        setSummary(s);
+        triggerFlash("negative");
+        showToast("人生谢幕", r.cause_of_death || "这一生走到了尽头。");
+        return;
+      }
 
       // 判断是否值得闪光：有突发事件、或有显著变化（任意 delta 绝对值 >= 10）
       const hasSudden = (r.sudden_events ?? []).length > 0;
@@ -258,19 +281,25 @@ export default function LifePage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span
-                className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                  state.age < 18
-                    ? "bg-blue-100 text-blue-700"
-                    : state.age < 35
-                    ? "bg-purple-100 text-purple-700"
-                    : state.age < 60
-                    ? "bg-amber-100 text-amber-700"
-                    : "bg-slate-100 text-slate-700"
-                }`}
-              >
-                {state.age < 18 ? "未成年" : state.age < 35 ? "青年" : state.age < 60 ? "中年" : "老年"}
-              </span>
+              {state.is_active === 0 ? (
+                <span className="rounded-full px-3 py-1 text-sm font-semibold bg-gray-800 text-white">
+                  已离世
+                </span>
+              ) : (
+                <span
+                  className={`rounded-full px-3 py-1 text-sm font-semibold ${
+                    state.age < 18
+                      ? "bg-blue-100 text-blue-700"
+                      : state.age < 35
+                      ? "bg-purple-100 text-purple-700"
+                      : state.age < 60
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-slate-100 text-slate-700"
+                  }`}
+                >
+                  {state.age < 18 ? "未成年" : state.age < 35 ? "青年" : state.age < 60 ? "中年" : "老年"}
+                </span>
+              )}
             </div>
           </div>
 
@@ -371,7 +400,64 @@ export default function LifePage() {
               {/* 顶部渐变条 */}
               <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500" />
 
-              {!turn && !result && (
+              {(state.is_active === 0 || summary) && (
+                <div className="flex flex-col items-center justify-center py-10 animate-fade-in-up">
+                  <div className="mb-6 text-center">
+                    <div className="mb-2 text-4xl">🕯️</div>
+                    <h2 className="text-2xl font-bold text-gray-900">人生谢幕</h2>
+                    <p className="mt-2 text-lg text-gray-600">{state.cause_of_death || summary?.state?.cause_of_death || "这一生走到了尽头。"}</p>
+                    <p className="mt-1 text-sm text-gray-500">享年 {state.age} 岁 · 人生 #{state.id}</p>
+                  </div>
+
+                  {summary && (
+                    <div className="w-full max-w-lg rounded-2xl border border-gray-100 bg-gray-50 p-5">
+                      <div className="mb-4 grid grid-cols-2 gap-4 text-center">
+                        <div className="rounded-xl bg-white p-3 shadow-sm">
+                          <div className="text-xl font-bold text-purple-600">{summary.totalYears}</div>
+                          <div className="text-xs text-gray-500">存活年数</div>
+                        </div>
+                        <div className="rounded-xl bg-white p-3 shadow-sm">
+                          <div className="text-xl font-bold text-emerald-600">{summary.maxMoney}</div>
+                          <div className="text-xs text-gray-500">巅峰财富</div>
+                        </div>
+                        <div className="rounded-xl bg-white p-3 shadow-sm">
+                          <div className="text-xl font-bold text-rose-600">{summary.totalSudden}</div>
+                          <div className="text-xs text-gray-500">遭遇突发</div>
+                        </div>
+                        <div className="rounded-xl bg-white p-3 shadow-sm">
+                          <div className="text-xl font-bold text-blue-600">{summary.maxHappiness}</div>
+                          <div className="text-xs text-gray-500">最高快乐</div>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-gray-600">
+                        <span className="rounded-full bg-purple-100 px-3 py-1 text-purple-700">{summary.finalCareer}</span>
+                        <span className="rounded-full bg-blue-100 px-3 py-1 text-blue-700">{summary.finalEducation}</span>
+                        {summary.isMarried && <span className="rounded-full bg-rose-100 px-3 py-1 text-rose-700">已婚</span>}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                    <button
+                      onClick={async () => {
+                        const newLife = await api.createLife();
+                        router.push(`/life/${newLife.id}`);
+                      }}
+                      className="rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3 text-lg font-bold text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl"
+                    >
+                      🔄 开启新人生
+                    </button>
+                    <button
+                      onClick={() => router.push("/")}
+                      className="rounded-2xl bg-gray-200 px-8 py-3 text-lg font-semibold text-gray-700 shadow transition-all hover:bg-gray-300"
+                    >
+                      🏠 返回首页
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {state.is_active !== 0 && !turn && !result && (
                 <div className="flex flex-col items-center justify-center py-14 animate-fade-in-up">
                   {suddenEvents.length > 0 && (
                     <div className="mb-6 w-full max-w-lg space-y-4">
@@ -428,7 +514,7 @@ export default function LifePage() {
                 </div>
               )}
 
-              {turn && turn.event === null && (
+              {state.is_active !== 0 && turn && turn.event === null && (
                 <div className="flex flex-col items-center justify-center py-14 animate-fade-in-up">
                   <p className="mb-6 text-center text-lg text-gray-600">这一年平平淡淡，没有什么特别的事情发生。</p>
                   <div className="flex flex-wrap items-center justify-center gap-3">
@@ -450,7 +536,7 @@ export default function LifePage() {
                 </div>
               )}
 
-              {turn?.event && (
+              {state.is_active !== 0 && turn?.event && (
                 <div className="space-y-5 animate-card-flip">
                   <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-violet-50 p-6">
                     <h3 className="mb-3 text-2xl font-bold text-indigo-900">{turn.event.title}</h3>
@@ -496,7 +582,7 @@ export default function LifePage() {
 
               {message && !turn && !result && <div className="py-8 text-center text-gray-600">{message}</div>}
 
-              {result && (
+              {state.is_active !== 0 && result && (
                 <div className="space-y-5 animate-slide-show-in">
                   <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 p-6">
                     <h3 className="mb-3 text-2xl font-bold text-emerald-900">{result.event.title}</h3>
@@ -590,9 +676,11 @@ export default function LifePage() {
             </div>
 
             {/* 控制栏 */}
-            <div className="flex flex-wrap gap-3">
-              <button onClick={handleEndGame} className="rounded-xl bg-rose-100 px-5 py-3 font-semibold text-rose-700 transition-all hover:bg-rose-200">🏁 结束人生</button>
-            </div>
+            {state.is_active !== 0 && (
+              <div className="flex flex-wrap gap-3">
+                <button onClick={handleEndGame} className="rounded-xl bg-rose-100 px-5 py-3 font-semibold text-rose-700 transition-all hover:bg-rose-200">🏁 结束人生</button>
+              </div>
+            )}
           </div>
 
           {/* 右侧：人生轨迹 */}

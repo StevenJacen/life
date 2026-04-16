@@ -9,6 +9,9 @@ CREATE TABLE IF NOT EXISTS life_state (
   education_level TEXT DEFAULT 'none',
   happiness INTEGER DEFAULT 50,
   health INTEGER DEFAULT 50,
+  is_active INTEGER DEFAULT 1,
+  ended_at DATETIME DEFAULT NULL,
+  cause_of_death TEXT DEFAULT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

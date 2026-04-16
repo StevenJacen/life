@@ -130,6 +130,17 @@ app.get('/api/life/:id/logs', (req, res) => {
   }
 });
 
+// 人生总结
+app.get('/api/life/:id/summary', (req, res) => {
+  try {
+    const summary = lifeEngine.getSummary(Number(req.params.id));
+    if (!summary) return res.status(404).json({ success: false, error: 'Life not found' });
+    res.json({ success: true, data: summary });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {
   app.listen(PORT, () => {

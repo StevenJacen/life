@@ -402,6 +402,9 @@ function chooseOption(lifeId, optionId) {
     JSON.stringify(suddenResults)
   );
 
+  // 检查人生是否结束
+  const endOfLife = checkEndOfLife(lifeId, state);
+
   const humor = getRandomHumor();
   if (humor) bumpHumorUsage(humor.id);
 
@@ -411,7 +414,9 @@ function chooseOption(lifeId, optionId) {
     option,
     results,
     humor_quote: humor,
-    sudden_events: suddenResults
+    sudden_events: suddenResults,
+    ended: endOfLife.ended,
+    cause_of_death: endOfLife.cause,
   };
 }
 
@@ -448,10 +453,19 @@ function skipYear(lifeId) {
     JSON.stringify(suddenResults)
   );
 
+  // 检查人生是否结束
+  const endOfLife = checkEndOfLife(lifeId, state);
+
   const humor = getRandomHumor();
   if (humor) bumpHumorUsage(humor.id);
 
-  return { state: getLifeState(lifeId), humor_quote: humor, sudden_events: suddenResults };
+  return {
+    state: getLifeState(lifeId),
+    humor_quote: humor,
+    sudden_events: suddenResults,
+    ended: endOfLife.ended,
+    cause_of_death: endOfLife.cause,
+  };
 }
 
 function getRandomHumor() {
@@ -479,6 +493,96 @@ function getLogs(lifeId) {
   `).all(lifeId);
 }
 
+// ========== 人生结束判定 ==========
+
+function checkEndOfLife(lifeId, state) {
+  if (state.is_active === 0) return { ended: true, cause: state.cause_of_death };
+
+  let cause = null;
+
+  // 1. 健康归零
+  if (state.health <= 0) {
+    cause = '健康崩溃，撒手人寰';
+  }
+  // 2. 百岁必然去世
+  else if (state.age >= 100) {
+    cause = '寿终正寝，功德圆满';
+  }
+  // 3. 80岁后天命判定
+  else if (state.age >= 80) {
+    const baseProb = 0.05 + (state.age - 80) * 0.02;
+    const healthMod = state.health < 30 ? 0.15 : state.health < 50 ? 0.05 : 0;
+    const finalProb = Math.min(0.8, baseProb + healthMod);
+    if (Math.random() < finalProb) {
+      cause = '年老体衰，驾鹤西去';
+    }
+  }
+  // 4. 60岁以上健康极低也有死亡风险
+  else if (state.age >= 60 && state.health < 10) {
+    if (Math.random() < 0.3) {
+      cause = '久病不治，溘然长逝';
+    }
+  }
+
+  if (cause) {
+    db.prepare(`
+      UPDATE life_state
+      SET is_active = 0, ended_at = datetime('now'), cause_of_death = ?
+      WHERE id = ?
+    `).run(cause, lifeId);
+    state.is_active = 0;
+    state.ended_at = new Date().toISOString();
+    state.cause_of_death = cause;
+    return { ended: true, cause };
+  }
+
+  return { ended: false, cause: null };
+}
+
+function getSummary(lifeId) {
+  const state = getLifeState(lifeId);
+  if (!state) return null;
+
+  const totalEvents = db.prepare('SELECT COUNT(DISTINCT event_id) as count FROM event_log WHERE life_id = ? AND event_id IS NOT NULL').get(lifeId).count;
+  const totalSudden = db.prepare('SELECT COUNT(*) as count FROM sudden_event_log WHERE life_id = ?').get(lifeId).count;
+  const marriageLog = db.prepare(`
+    SELECT COUNT(*) as count FROM event_log el
+    JOIN event_def ed ON el.event_id = ed.id
+    WHERE el.life_id = ? AND ed.title = '结婚'
+  `).get(lifeId);
+  const isMarried = marriageLog.count > 0;
+
+  const bestYear = db.prepare(`
+    SELECT age, result FROM event_log
+    WHERE life_id = ? AND result IS NOT NULL
+    ORDER BY created_at DESC
+  `).all(lifeId);
+
+  let maxMoney = state.money;
+  let maxHappiness = state.happiness;
+  for (const row of bestYear) {
+    try {
+      const res = JSON.parse(row.result || '[]');
+      for (const r of res) {
+        if (r.type === 'money' && r.newValue > maxMoney) maxMoney = r.newValue;
+        if (r.type === 'happiness' && r.newValue > maxHappiness) maxHappiness = r.newValue;
+      }
+    } catch {}
+  }
+
+  return {
+    state,
+    totalYears: state.age,
+    totalEvents,
+    totalSudden,
+    isMarried,
+    maxMoney,
+    maxHappiness,
+    finalCareer: state.career,
+    finalEducation: state.education_level,
+  };
+}
+
 module.exports = {
   createLife,
   getLifeState,
@@ -488,4 +592,6 @@ module.exports = {
   getLogs,
   getRandomHumor,
   bumpHumorUsage,
+  checkEndOfLife,
+  getSummary,
 };
