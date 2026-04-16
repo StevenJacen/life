@@ -64,6 +64,9 @@ test.describe('中式人生模拟器', () => {
     if (await optionBtn.isVisible()) {
       await optionBtn.click();
       await expect(page.locator('text=结果如下')).toBeVisible({ timeout: 5000 });
+    } else {
+      await continueBtn.click();
+      await expect(page.getByRole('button', { name: /开始人生|下一年/ }).first()).toBeVisible();
     }
 
     // 检查右侧轨迹有记录（至少有一年）
@@ -109,6 +112,9 @@ test.describe('中式人生模拟器', () => {
     if (await optionBtn.isVisible()) {
       await optionBtn.click();
       await expect(page.locator('text=结果如下')).toBeVisible({ timeout: 5000 });
+    } else {
+      await continueBtn.click();
+      await expect(page.getByRole('button', { name: /开始人生|下一年/ }).first()).toBeVisible();
     }
 
     // 结果页面或无选项事件页面都应该有今日金句
